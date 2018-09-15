@@ -12,15 +12,15 @@ module.exports = function (app) {
   var storeRoute;
   var base64Data;
 
-  var imgPath; 
+  var imgPath;
 
 
   var storage = multer.diskStorage({
     destination: "./public/images/profileImgs",
-    filename: function(req, file, next) {
+    filename: function (req, file, next) {
       imgPath = file.fieldname + "-" + Date.now() + path.extname(file.originalname);
       next(null, imgPath);
-      
+
     }
   });
 
@@ -35,7 +35,7 @@ module.exports = function (app) {
   });
   //GET  store infomation data from registration
   app.get("/api/register", function (req, res) {
-    db.storeInfo.findAll({ 
+    db.storeInfo.findAll({
       include: [db.customerReviews]
     }).then(function (database) {
       res.json(database);
@@ -55,25 +55,25 @@ module.exports = function (app) {
   });
 
   // Create a new owner's information
-  app.post("/api/register",upload, function (req, res) {
-    
+  app.post("/api/register", upload, function (req, res) {
+
     //these work
-    console.log("priceNumber",req.body.priceNumber);
+    console.log("priceNumber", req.body.priceNumber);
     console.log("price", req.body.price);
     req.body.fname = req.body.fname.trim();
     req.body.lname = req.body.lname.trim();
     storeRoute = req.body.fname + req.body.lname;
-    storeRoute =storeRoute.replace(/\s+/g, "").toLowerCase();
+    storeRoute = storeRoute.replace(/\s+/g, "").toLowerCase();
     console.log("storeRoute", storeRoute);
 
-    
+
     db.storeInfo.create(req.body).then(function (database) {
-    //    res.json(database);
+      //    res.json(database);
       storeID = database.id;
       res.redirect("/login");
-    }).then(function() {
-    
-      createQR("https://fist-to-five.herokuapp.com/review/"+storeID);
+    }).then(function () {
+
+      createQR("https://fist-to-five.herokuapp.com/review/" + storeID);
     });
   });
 
@@ -92,43 +92,43 @@ module.exports = function (app) {
       base64Data = imgData.replace(/^data:image\/png;base64,/, "");
       db.storeInfo.update({
         QRcode: imgData
-      }, 
+      },
       {
         where: {
           id: storeID
         }
 
-      }).then(function() {
-        db.storeInfo.update({
-          routeName: storeRoute
-        }, 
-        {
-          where: {
-            id: storeID
-          }
-        }).then(function (){
+        }).then(function () {
           db.storeInfo.update({
-            img: "../images/profileImgs/" + imgPath
-          }, 
-          {
-            where: {
-              id: storeID
-            }
-          }).then(function () {
-            writeQRtoFile();
-          })
-        })
-      }).then(function() {
+            routeName: storeRoute
+          },
+            {
+              where: {
+                id: storeID
+              }
+            }).then(function () {
+              db.storeInfo.update({
+                img: "../images/profileImgs/" + imgPath
+              },
+                {
+                  where: {
+                    id: storeID
+                  }
+                }).then(function () {
+                  writeQRtoFile();
+                })
+            })
+        }).then(function () {
 
-        writeQRtoFile();
+          writeQRtoFile();
 
-      });
+        });
     });
   }
 
   function writeQRtoFile() {
     var saveLocation = "./public/images/qrCodeImages/QRcodeID" + storeRoute + ".png";
-    
+
     fs.writeFile(saveLocation, base64Data, "base64", function (err) {
       if (err) {
         console.log("Error writing file:", err);
